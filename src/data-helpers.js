@@ -3,7 +3,7 @@
  * Provides utility functions for accessing and querying WCAG data
  */
 
-import wcagData from "../data/wcag.json" assert { type: "json" };
+import wcagData from "../data/wcag.json" with { type: "json" };
 
 // Export raw data for direct access
 export const principles = wcagData.principles;

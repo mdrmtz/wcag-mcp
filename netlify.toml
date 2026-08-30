@@ -1,5 +1,5 @@
 [build]
-  command = "git submodule update --init --recursive && npm install"
+  command = "git submodule update --init --recursive && npm install && node scripts/fetch-wcag-data.js"
   functions = "netlify/functions"
   publish = "."
 
