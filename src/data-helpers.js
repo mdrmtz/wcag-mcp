@@ -3,15 +3,7 @@
  * Provides utility functions for accessing and querying WCAG data
  */
 
-import { createRequire } from 'module';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const require = createRequire(import.meta.url);
-
-// Load data files
-const wcagData = require(join(__dirname, '..', 'data', 'wcag.json'));
+import wcagData from "../data/wcag.json" assert { type: "json" };
 
 // Export raw data for direct access
 export const principles = wcagData.principles;
@@ -21,7 +13,12 @@ export const terms = wcagData.terms;
  * Strip HTML tags from a string
  */
 export function stripHtml(html) {
-  return html?.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() || '';
+  return (
+    html
+      ?.replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim() || ""
+  );
 }
 
 /**
@@ -49,7 +46,7 @@ export function getQuickRefUrl(sc) {
  * Find a principle by number (1-4)
  */
 export function findPrinciple(num) {
-  return principles.find(p => p.num === String(num));
+  return principles.find((p) => p.num === String(num));
 }
 
 /**
@@ -57,7 +54,7 @@ export function findPrinciple(num) {
  */
 export function findGuideline(num) {
   for (const principle of principles) {
-    const guideline = principle.guidelines.find(g => g.num === num);
+    const guideline = principle.guidelines.find((g) => g.num === num);
     if (guideline) {
       return { principle, guideline };
     }
@@ -71,7 +68,7 @@ export function findGuideline(num) {
 export function findSuccessCriterion(num) {
   for (const principle of principles) {
     for (const guideline of principle.guidelines) {
-      const sc = guideline.successcriteria.find(s => s.num === num);
+      const sc = guideline.successcriteria.find((s) => s.num === num);
       if (sc) {
         return { principle, guideline, sc };
       }
@@ -86,7 +83,7 @@ export function findSuccessCriterion(num) {
 export function findSuccessCriterionById(id) {
   for (const principle of principles) {
     for (const guideline of principle.guidelines) {
-      const sc = guideline.successcriteria.find(s => s.id === id);
+      const sc = guideline.successcriteria.find((s) => s.id === id);
       if (sc) {
         return { principle, guideline, sc };
       }
@@ -100,29 +97,30 @@ export function findSuccessCriterionById(id) {
  */
 export function getAllSuccessCriteria(filters = {}) {
   const results = [];
-  
+
   for (const principle of principles) {
-    if (filters.principle && principle.num !== String(filters.principle)) continue;
-    
+    if (filters.principle && principle.num !== String(filters.principle))
+      continue;
+
     for (const guideline of principle.guidelines) {
       if (filters.guideline && guideline.num !== filters.guideline) continue;
-      
+
       for (const sc of guideline.successcriteria) {
         if (filters.level && sc.level !== filters.level) continue;
         if (filters.levels && !filters.levels.includes(sc.level)) continue;
         if (filters.version && !sc.versions.includes(filters.version)) continue;
-        
+
         results.push({
           ...sc,
           principle_num: principle.num,
           principle_handle: principle.handle,
           guideline_num: guideline.num,
-          guideline_handle: guideline.handle
+          guideline_handle: guideline.handle,
         });
       }
     }
   }
-  
+
   return results;
 }
 
@@ -131,15 +129,15 @@ export function getAllSuccessCriteria(filters = {}) {
  */
 export function getAllTechniques() {
   const techniquesMap = new Map();
-  
+
   for (const principle of principles) {
     for (const guideline of principle.guidelines) {
       for (const sc of guideline.successcriteria) {
         if (!sc.techniques) continue;
-        
+
         const collectTechniques = (techniques, type) => {
           if (!techniques) return;
-          
+
           for (const item of techniques) {
             // Handle sections with nested techniques
             if (item.techniques) {
@@ -150,7 +148,7 @@ export function getAllTechniques() {
                 }
               }
             }
-            
+
             // Handle individual techniques
             if (item.id && item.title) {
               const existing = techniquesMap.get(item.id);
@@ -160,38 +158,38 @@ export function getAllTechniques() {
                   technology: item.technology,
                   title: item.title,
                   types: new Set([type]),
-                  criteria: new Set([sc.num])
+                  criteria: new Set([sc.num]),
                 });
               } else {
                 existing.types.add(type);
                 existing.criteria.add(sc.num);
               }
             }
-            
+
             // Handle nested using arrays
             if (item.using) {
               collectTechniques(item.using, type);
             }
-            
+
             // Handle AND combinations
             if (item.and) {
               collectTechniques(item.and, type);
             }
           }
         };
-        
-        collectTechniques(sc.techniques.sufficient, 'sufficient');
-        collectTechniques(sc.techniques.advisory, 'advisory');
-        collectTechniques(sc.techniques.failure, 'failure');
+
+        collectTechniques(sc.techniques.sufficient, "sufficient");
+        collectTechniques(sc.techniques.advisory, "advisory");
+        collectTechniques(sc.techniques.failure, "failure");
       }
     }
   }
-  
+
   // Convert Sets to arrays for serialization
-  return Array.from(techniquesMap.values()).map(t => ({
+  return Array.from(techniquesMap.values()).map((t) => ({
     ...t,
     types: Array.from(t.types),
-    criteria: Array.from(t.criteria)
+    criteria: Array.from(t.criteria),
   }));
 }
 
@@ -200,7 +198,7 @@ export function getAllTechniques() {
  */
 export function findTechnique(id) {
   const allTechniques = getAllTechniques();
-  return allTechniques.find(t => t.id.toLowerCase() === id.toLowerCase());
+  return allTechniques.find((t) => t.id.toLowerCase() === id.toLowerCase());
 }
 
 /**
@@ -209,7 +207,7 @@ export function findTechnique(id) {
 export function getTechniquesForCriterion(scNum) {
   const result = findSuccessCriterion(scNum);
   if (!result) return null;
-  
+
   const { sc } = result;
   return sc.techniques || {};
 }
@@ -219,9 +217,10 @@ export function getTechniquesForCriterion(scNum) {
  */
 export function findTerm(name) {
   const searchName = name.toLowerCase();
-  return terms.find(t => 
-    t.name.toLowerCase() === searchName ||
-    t.id.toLowerCase() === `dfn-${searchName.replace(/\s+/g, '-')}`
+  return terms.find(
+    (t) =>
+      t.name.toLowerCase() === searchName ||
+      t.id.toLowerCase() === `dfn-${searchName.replace(/\s+/g, "-")}`,
   );
 }
 
@@ -230,9 +229,10 @@ export function findTerm(name) {
  */
 export function searchTerms(query) {
   const searchQuery = query.toLowerCase();
-  return terms.filter(t => 
-    t.name.toLowerCase().includes(searchQuery) ||
-    stripHtml(t.definition).toLowerCase().includes(searchQuery)
+  return terms.filter(
+    (t) =>
+      t.name.toLowerCase().includes(searchQuery) ||
+      stripHtml(t.definition).toLowerCase().includes(searchQuery),
   );
 }
 
@@ -240,11 +240,13 @@ export function searchTerms(query) {
  * Get success criteria added in a specific WCAG version
  */
 export function getNewInVersion(version) {
-  const versionStr = version.includes('.') ? version : `2.${version.replace('2', '')}`;
-  return getAllSuccessCriteria().filter(sc => {
+  const versionStr = version.includes(".")
+    ? version
+    : `2.${version.replace("2", "")}`;
+  return getAllSuccessCriteria().filter((sc) => {
     // SC is new in this version if it appears in this version but not earlier ones
     const versions = sc.versions || [];
-    const earlierVersions = versions.filter(v => v < versionStr);
+    const earlierVersions = versions.filter((v) => v < versionStr);
     return versions.includes(versionStr) && earlierVersions.length === 0;
   });
 }
@@ -254,7 +256,6 @@ export function getNewInVersion(version) {
  */
 export function textResponse(text) {
   return {
-    content: [{ type: 'text', text }]
+    content: [{ type: "text", text }],
   };
 }
-
